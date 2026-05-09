@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using QuizApp.Application.Interfaces;
 using QuizApp.Domain.Entities;
+using QuizApp.Domain.Models;
 using StackExchange.Redis;
 
 namespace QuizApp.Infrastructure.Cache
@@ -45,5 +46,18 @@ namespace QuizApp.Infrastructure.Cache
 
         public async Task DeleteConnectionAsync(string connectionId) =>
             await _db.KeyDeleteAsync(ConnPrefix + connectionId);
+
+        public async Task<List<Question>?> GetQuestionsAsync(string cacheKey)
+        {
+            var value = await _db.StringGetAsync("questions:" + cacheKey);
+            if (value.IsNullOrEmpty) return null;
+            return JsonSerializer.Deserialize<List<Question>>(value!);
+        }
+
+        public async Task SetQuestionsAsync(string cacheKey, List<Question> questions) =>
+            await _db.StringSetAsync(
+                "questions:" + cacheKey,
+                JsonSerializer.Serialize(questions),
+                TimeSpan.FromHours(1));
     }
 }

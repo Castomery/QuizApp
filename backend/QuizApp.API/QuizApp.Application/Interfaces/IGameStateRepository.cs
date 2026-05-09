@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using QuizApp.Domain.Entities;
+using QuizApp.Domain.Models;
 
 namespace QuizApp.Application.Interfaces
 {
@@ -17,5 +18,7 @@ namespace QuizApp.Application.Interfaces
         Task<string?> GetRoomByConnectionAsync(string connectionId);
         Task DeleteConnectionAsync(string connectionId);
 
+        Task<List<Question>?> GetQuestionsAsync(string cacheKey);
+        Task SetQuestionsAsync(string cacheKey, List<Question> questions);
     }
 }

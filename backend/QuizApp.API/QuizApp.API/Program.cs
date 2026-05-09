@@ -7,6 +7,7 @@ using QuizApp.Infrastructure.Cache;
 using QuizApp.API.Hubs;
 using QuizApp.Infrastructure.Persistence.Repositories;
 using QuizApp.Application.Services;
+using QuizApp.Infrastructure.AI;
 
 namespace QuizApp.API
 {
@@ -47,6 +48,8 @@ namespace QuizApp.API
             builder.Services.AddSingleton<ScoringService>();
 
             builder.Services.AddScoped<IGameService, GameService>();
+            builder.Services.AddHttpClient<IAiClient, GroqClient>();
+            builder.Services.AddScoped<AiHostService>();
 
             builder.Services.AddSignalR();
 

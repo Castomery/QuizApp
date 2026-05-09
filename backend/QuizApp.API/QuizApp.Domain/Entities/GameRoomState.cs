@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using QuizApp.Domain.Models;
 
 namespace QuizApp.Domain.Entities
 {
@@ -15,5 +16,7 @@ namespace QuizApp.Domain.Entities
         public int CurrentRound { get; set; } = 0;
         public int TotalRounds { get; set; } = 5;
         public RoomPhase Phase { get; set; } = RoomPhase.Waiting;
+
+        public Question? CurrentQuestion { get; set; }
     }
 }

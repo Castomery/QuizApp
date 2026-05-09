@@ -15,5 +15,8 @@ namespace QuizApp.Domain.Entities
         public int Score { get; set; } = 0;
         public int Streak { get; set; } = 0;
         public bool HasAnswered { get; set; } = false;
+
+        public bool LastAnswerCorrect { get; set; } = false;
+        public int FastestTimeMs { get; set; } = 0;
     }
 }

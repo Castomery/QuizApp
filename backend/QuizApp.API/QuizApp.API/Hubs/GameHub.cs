@@ -8,7 +8,8 @@ namespace QuizApp.API.Hubs
     public class GameHub(
     IGameStateRepository gameState,
     IGameSessionRepository sessionRepo,
-    ScoringService scoringService) : Hub
+    ScoringService scoringService,
+    AiHostService aiHost) : Hub
     {
 
         public async Task JoinRoom(string roomCode, string token)
@@ -91,15 +92,37 @@ namespace QuizApp.API.Hubs
             if (state.Phase != RoomPhase.Waiting)
                 throw new HubException("Гра вже йде");
 
+            await Clients.Group(roomCode).SendAsync("GeneratingQuestions", new
+            {
+                message = "AI готує питання..."
+            });
+
+            var questions = await aiHost.GetQuestionsAsync(
+                state.Topic, state.Difficulty, state.TotalRounds);
+
             state.Phase = RoomPhase.InProgress;
             state.CurrentRound = 1;
+            state.CurrentQuestion = questions[0];
             await gameState.SetAsync(state);
+
+            await gameState.SetQuestionsAsync(
+            $"{roomCode}:questions",
+            questions);
 
             await Clients.Group(roomCode).SendAsync("GameStarted", new
             {
                 state.Topic,
                 state.Difficulty,
                 state.TotalRounds
+            });
+
+            await Clients.Group(roomCode).SendAsync("QuestionStarted", new
+            {
+                round = state.CurrentRound,
+                total = state.TotalRounds,
+                text = state.CurrentQuestion.Text,
+                options = state.CurrentQuestion.Options,
+                timeoutSec = 20
             });
         }
 
@@ -115,17 +138,21 @@ namespace QuizApp.API.Hubs
                 throw new HubException("Ти вже відповів на це питання");
 
             player.HasAnswered = true;
+            player.LastAnswerCorrect = answerIndex == state.CurrentQuestion.CorrectIndex;
 
-            // TODO Етап 3: правильний індекс буде з AI питання
-            var isCorrect = answerIndex == 0;
+            var isCorrect = player.LastAnswerCorrect;
             var points = isCorrect
                 ? scoringService.Calculate(responseTimeMs, player.Streak, state.Difficulty)
                 : 0;
+
 
             if (isCorrect)
             {
                 player.Score += points;
                 player.Streak++;
+
+                if (player.FastestTimeMs == 0 || responseTimeMs < player.FastestTimeMs)
+                    player.FastestTimeMs = responseTimeMs;
             }
             else
             {
@@ -161,16 +188,37 @@ namespace QuizApp.API.Hubs
 
         private async Task EndRound(string roomCode, GameRoomState state)
         {
+
+            var fastest = state.Players
+            .Where(p => p.LastAnswerCorrect)
+            .MinBy(p => p.FastestTimeMs);
+
+            var correctCount = state.Players.Count(p => p.LastAnswerCorrect);
+            var comment = await aiHost.GetRoundCommentAsync(
+                state.Topic,
+                correctCount,
+                state.Players.Count,
+                fastest?.Username ?? "ніхто");
+
             await Clients.Group(roomCode).SendAsync("RoundEnded", new
             {
                 round = state.CurrentRound,
-                correctAnswerIndex = 0 // TODO Етап 3: з AI питання
+                correctAnswerIndex = state.CurrentQuestion!.CorrectIndex,
+                explanation = state.CurrentQuestion.Explanation,
+                aiComment = comment
             });
 
             if (state.CurrentRound >= state.TotalRounds)
             {
                 state.Phase = RoomPhase.Finished;
                 await gameState.SetAsync(state);
+
+                var mvp = state.Players.MaxBy(p => p.Score);
+
+                var summary = await aiHost.GetGameSummaryAsync(
+                    mvp?.Username ?? "невідомий",
+                    state.TotalRounds,
+                    state.Topic);
 
                 var finalLeaderboard = state.Players
                     .OrderByDescending(p => p.Score)
@@ -184,14 +232,38 @@ namespace QuizApp.API.Hubs
                 await Clients.Group(roomCode).SendAsync("GameFinished", new
                 {
                     leaderboard = finalLeaderboard,
-                    mvp = state.Players.MaxBy(p => p.Score)?.Username
+                    mvp = mvp?.Username,
+                    aiSummary = summary
                 });
+
+                await gameState.DeleteAsync(roomCode);
             }
             else
             {
+
+                var questions = await gameState.GetQuestionsAsync($"{roomCode}:questions")
+                ?? throw new HubException("Питання не знайдені");
+
+
                 state.CurrentRound++;
-                state.Players.ForEach(p => p.HasAnswered = false);
+                state.CurrentQuestion = questions[state.CurrentRound - 1];
+                state.Players.ForEach(p =>
+                {
+                    p.HasAnswered = false;
+                    p.LastAnswerCorrect = false;
+                    p.FastestTimeMs = 0;
+                });
+
                 await gameState.SetAsync(state);
+
+                await Clients.Group(roomCode).SendAsync("QuestionStarted", new
+                {
+                    round = state.CurrentRound,
+                    total = state.TotalRounds,
+                    text = state.CurrentQuestion.Text,
+                    options = state.CurrentQuestion.Options,
+                    timeoutSec = 20
+                });
             }
         }
 
