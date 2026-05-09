@@ -12,5 +12,8 @@ namespace QuizApp.Application.Interfaces
         Task<Player?> GetByIdAsync(Guid id);
         Task<Player> CreateAsync(Player player);
         Task UpdateAsync(Player player);
+        Task UpdateStatsAsync(Guid playerId, bool won);
+
+        Task<List<Player>> GetTopPlayersAsync(int count);
     }
 }

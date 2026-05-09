@@ -18,5 +18,6 @@ namespace QuizApp.Domain.Entities
 
         public bool LastAnswerCorrect { get; set; } = false;
         public int FastestTimeMs { get; set; } = 0;
+        public int CorrectAnswers { get; set; } = 0;
     }
 }

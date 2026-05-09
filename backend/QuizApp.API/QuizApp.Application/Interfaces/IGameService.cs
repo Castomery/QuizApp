@@ -12,5 +12,7 @@ namespace QuizApp.Application.Interfaces
         Task<GameSession> CreateRoomAsync(string topic, int difficulty);
         Task<GameSession?> GetRoomByCodeAsync(string code);
         Task<PlayerSession> JoinRoomAsync(string roomCodem, string playerName);
+
+        Task SaveGameResultsAsync(string roomCode, List<ConnectedPlayer> players);
     }
 }

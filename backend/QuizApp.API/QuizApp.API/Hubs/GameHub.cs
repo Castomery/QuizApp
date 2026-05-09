@@ -9,7 +9,8 @@ namespace QuizApp.API.Hubs
     IGameStateRepository gameState,
     IGameSessionRepository sessionRepo,
     ScoringService scoringService,
-    AiHostService aiHost) : Hub
+    AiHostService aiHost,
+    IGameService gameService) : Hub
     {
 
         public async Task JoinRoom(string roomCode, string token)
@@ -150,7 +151,7 @@ namespace QuizApp.API.Hubs
             {
                 player.Score += points;
                 player.Streak++;
-
+                player.CorrectAnswers++;
                 if (player.FastestTimeMs == 0 || responseTimeMs < player.FastestTimeMs)
                     player.FastestTimeMs = responseTimeMs;
             }
@@ -235,6 +236,8 @@ namespace QuizApp.API.Hubs
                     mvp = mvp?.Username,
                     aiSummary = summary
                 });
+
+                await gameService.SaveGameResultsAsync(roomCode, state.Players);
 
                 await gameState.DeleteAsync(roomCode);
             }

@@ -29,5 +29,33 @@ namespace QuizApp.Infrastructure.Persistence.Repositories
             db.PlayerSessions.Add(playerSession);
             await db.SaveChangesAsync();
         }
+
+        public async Task<GameSession?> GetByIdAsync(Guid id)
+        {
+            return await db.GameSessions
+            .Include(s => s.PlayerSessions)
+            .ThenInclude(ps => ps.Player)
+            .FirstOrDefaultAsync(s => s.Id == id);
+        }
+
+        public async Task UpdateStatusAsync(Guid sessionId, GameStatus status, DateTime finishedAt)
+        {
+            await db.GameSessions
+                .Where(s => s.Id == sessionId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Status, status)
+                    .SetProperty(x => x.FinishedAt, finishedAt));
+        }
+
+        public async Task UpdatePlayerSessionResultAsync(
+            Guid playerSessionId, int finalScore, int finalRank, int correctAnswers)
+        {
+            await db.PlayerSessions
+                .Where(ps => ps.Id == playerSessionId)
+                .ExecuteUpdateAsync(ps => ps
+                    .SetProperty(x => x.FinalScore, finalScore)
+                    .SetProperty(x => x.FinalRank, finalRank)
+                    .SetProperty(x => x.CorrectAnswers, correctAnswers));
+        }
     }
 }
