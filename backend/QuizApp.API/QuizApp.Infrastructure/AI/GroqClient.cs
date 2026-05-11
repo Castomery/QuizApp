@@ -17,7 +17,7 @@ namespace QuizApp.Infrastructure.AI
         private readonly HttpClient _httpClient;
         private readonly string _model;
 
-        public GroqClient(HttpClient http, IConfiguration config) 
+        public GroqClient(HttpClient http, IConfiguration config)
         {
             _httpClient = http;
             _model = config["Groq:Model"] ?? "llama-3.3-70b-versatile";
@@ -31,10 +31,23 @@ namespace QuizApp.Infrastructure.AI
             {
                 model = _model,
                 max_tokens = maxTokens,
-                messages = new[]
+                messages = new object[]
                 {
-                    new {role="user", content=prompt}
-                }
+                    new
+                    {
+                        role = "system",
+                        content = """
+                        Ти — україномовний ведучий розважальної вікторини на телебаченні.
+                        ОБОВ'ЯЗКОВІ ПРАВИЛА — порушення неприпустиме:
+                        1. Відповідай ВИКЛЮЧНО українською мовою.
+                        2. Забороняється використовувати будь-які англійські, китайські або інші іноземні слова.
+                        3. Якщо не знаєш слова — заміни синонімом або опиши по-іншому.
+                        4. Стиль: енергійний, веселий, як на живому телешоу.
+                        5. Ніколи не починай речення з іноземного слова.
+                        """
+                    },
+                    new { role = "user", content = prompt }
+                }       
             };
 
             var response = await _httpClient.PostAsJsonAsync(

@@ -31,10 +31,9 @@ namespace QuizApp.Application.Services
             """;
 
             var prompt = $"""
-                Ти — ведучий вікторини українською мовою.
+                Ти — ведучий вікторини. Відповідай ВИКЛЮЧНО українською мовою.
                 Згенеруй {count} питань на тему "{topic}".
                 Складність: {difficulty} з 5.
-    
                 Відповідай ТІЛЬКИ валідним JSON масивом без жодного тексту до або після:
                 {jsonTemplate}
                 """;
@@ -61,11 +60,12 @@ namespace QuizApp.Application.Services
             string topic, int correctCount, int totalPlayers, string fastestPlayer)
         {
             var prompt = $"""
-            Ти — енергійний ведучий вікторини. Прокоментуй результат раунду в 1-2 речення.
+            Ти — енергійний ведучий вікторини. Відповідай ВИКЛЮЧНО українською мовою без жодних інших мов.
+            Прокоментуй результат раунду в 1-2 речення.
             Тема: {topic}
             Правильно відповіли: {correctCount} з {totalPlayers} гравців.
             Найшвидший: {fastestPlayer}.
-            Будь веселим і коротким. Відповідай тільки українською.
+            Будь веселим і коротким. ТІЛЬКИ українська мова.
             """;
 
             return await groqClient.CompleteAsync(prompt, maxTokens: 150);
@@ -75,11 +75,11 @@ namespace QuizApp.Application.Services
             string mvp, int totalRounds, string topic)
         {
             var prompt = $"""
-            Ти — ведучий вікторини. Гра завершилась!
-            Тема була: {topic}, зіграно раундів: {totalRounds}.
+            Ти — ведучий вікторини. Відповідай ВИКЛЮЧНО українською мовою без жодних інших мов.
+            Гра завершилась! Тема була: {topic}, зіграно раундів: {totalRounds}.
             Переможець: {mvp}.
             Напиши фінальну репліку в 2-3 речення — вітай переможця з гумором.
-            Відповідай тільки українською.
+            ТІЛЬКИ українська мова.
             """;
 
             return await groqClient.CompleteAsync(prompt, maxTokens: 200);
